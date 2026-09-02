@@ -1,0 +1,11 @@
+name: test-call
+on:
+  push:
+    branches: [main]
+jobs:
+  call:
+    uses: tolgacelik22/gh-workflows/.github/workflows/build-image.yml@main
+    with:
+      app: dummy
+    secrets:
+      INFRA_DEPLOY_KEY: dummy-value
