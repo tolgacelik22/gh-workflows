@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: "Dockerfile"
+      manifests_dir:
+        description: "infra'daki manifest dizini (varsayılan: app adı)"
+        required: false
+        type: string
+        default: ""
     secrets:
       INFRA_DEPLOY_KEY:
         description: "infra repo'suna yazabilen SSH deploy key (private key)"
@@ -58,14 +63,15 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/infra_key"
           git clone --depth 1 "git@github.com:${{ github.repository_owner }}/infra.git" infra
-          cd "infra/manifests/${{ inputs.app }}"
+          MD="${{ inputs.manifests_dir }}"; MD="${MD:-${{ inputs.app }}}"
+          cd "infra/manifests/${MD}"
           curl -sLo /tmp/kustomize.tgz "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.5.0/kustomize_v5.5.0_linux_amd64.tar.gz"
           tar xzf /tmp/kustomize.tgz -C /tmp
           /tmp/kustomize edit set image "ghcr.io/${{ github.repository_owner }}/${{ inputs.app }}=ghcr.io/${{ github.repository_owner }}/${{ inputs.app }}:${{ github.sha }}"
           cd ../..
           git config user.name "deploy-bot"
           git config user.email "deploy-bot@users.noreply.github.com"
-          git add "manifests/${{ inputs.app }}/kustomization.yaml"
+          git add "manifests/${MD}/kustomization.yaml"
           git commit -m "deploy(${{ inputs.app }}): ${{ github.sha }}" || exit 0
           for i in 1 2 3 4 5; do
             git push && exit 0
